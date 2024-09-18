@@ -32,10 +32,8 @@ while (true)
         _ => Task.Run(() => Console.WriteLine("Invalid input"))
     });
 
-    if (choice == 4) break;
+    if (choice == 4) return;
 }
-
-return;
 
 Task TransmitData(SerialPort port)
 {
@@ -62,4 +60,3 @@ Task ExitProgram(SerialPort port1, SerialPort port2)
 
 void HandleDataReceived(SerialPort port, string portName)
     => Console.WriteLine($"Data received from {portName}: {port.ReadExisting()}");
-

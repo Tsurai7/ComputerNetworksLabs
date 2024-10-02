@@ -1,6 +1,5 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lab1", "Lab1\Lab1\Lab1.csproj", "{3B7D0211-696C-4EE7-82BB-F1227C0FD848}"
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Labs", "Labs\Labs.csproj", "{3B7D0211-696C-4EE7-82BB-F1227C0FD848}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

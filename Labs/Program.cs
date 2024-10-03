@@ -37,14 +37,13 @@ while (true)
 
 async Task TransmitData(SerialPort senderPort, SerialPort receiverPort)
 {
-    var dataLength = 28 + 1;
-
+    const int maxDataLength = 28; // Максимальная длина данных
     Console.WriteLine("Enter data to transmit: ");
     var input = Console.ReadLine()!;
-    
-    if (input.Length > dataLength - 1)
+
+    if (input.Length > maxDataLength)
     {
-        Console.WriteLine($"Data length must be at most {dataLength - 1} characters.");
+        Console.WriteLine($"Data length must be at most {maxDataLength} characters.");
         return;
     }
     
@@ -53,7 +52,7 @@ async Task TransmitData(SerialPort senderPort, SerialPort receiverPort)
         SourceAddress = senderPort.PortName[^1],
         DestinationAddress = 0,
         FCS = 0,
-        Data = Encoding.UTF8.GetBytes(input.PadRight(dataLength - 1, '\0'))
+        Data = Encoding.UTF8.GetBytes(input.PadRight(maxDataLength, '\0')) // Заполнение до максимальной длины
     };
     
     var packetBytes = packet.ToBytes();
@@ -82,11 +81,9 @@ void HandleDataReceived(SerialPort port, string portName)
 {
     var data = port.ReadExisting();
     var bytes = Encoding.UTF8.GetBytes(data);
-
-
     var originalBytes = bytes.ToArray(); 
     
-    var unstuffedBytes = Packet.BitUnstuff(bytes);
+    var unstuffedBytes = Packet.BitUnstuff(originalBytes);
     var packet = Packet.FromBytes(unstuffedBytes);
 
     Console.WriteLine($"Data received from {portName}:");
@@ -94,7 +91,6 @@ void HandleDataReceived(SerialPort port, string portName)
     Console.WriteLine("Original Frame (before de-stuffing):");
     PrintFrame(originalBytes, "Original");
     
-    Console.WriteLine("Decoded Packet:");
     PrintFrame(unstuffedBytes, "Decoded");
 
     var flagBinary = string.Join(", ", packet.Flag.Select(b => Convert.ToString(b, 2).PadLeft(8, '0')));
@@ -121,7 +117,7 @@ void PrintFrame(byte[] frame, string label)
         if (frame[i] == 0x7D) 
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"  Byte {i}: {binaryString} (Modified)");
+            Console.WriteLine($"  Byte {i+1}: {binaryString} (Modified)");
             Console.ResetColor();
         }
         else

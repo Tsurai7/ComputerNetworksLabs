@@ -2,21 +2,22 @@ namespace Labs
 {
     public class Packet
     {
-        public byte[] Flag = [28, 0, 0, 0, 0, 0, 0, 0];
+        public byte[] Flag = new byte[] { 28, 28, 28, 28, 28, 28, 28, 28 };
         public int DestinationAddress { get; init; }
         public int SourceAddress { get; init; }
-        public byte[] Data = new byte[29];
+        public byte[] Data = new byte[29]; // Убедитесь, что размер соответствует вашим требованиям
         public byte FCS { get; init; }
 
         public byte[] ToBytes()
         {
-            var packetLength = Flag.Length + 4 + 4 + Data.Length + 1;
+            var stuffedData = BitStuff(Data);
+            var packetLength = Flag.Length + 4 + 4 + stuffedData.Length + 1;
             var bytes = new byte[packetLength];
 
             Array.Copy(Flag, 0, bytes, 0, Flag.Length); 
             BitConverter.GetBytes(DestinationAddress).CopyTo(bytes, Flag.Length); 
             BitConverter.GetBytes(SourceAddress).CopyTo(bytes, Flag.Length + 4);
-            Data.CopyTo(bytes, Flag.Length + 8); 
+            stuffedData.CopyTo(bytes, Flag.Length + 8); 
             bytes[^1] = FCS;
 
             return bytes;
@@ -25,20 +26,20 @@ namespace Labs
         public static Packet FromBytes(byte[] bytes)
         {
             var flag = new byte[8];
-            Array.Copy(bytes, 0, flag, 0, 8);
-            var destinationAddress = BitConverter.ToInt32(bytes, 8);
-            var sourceAddress = BitConverter.ToInt32(bytes, 12);
-            var dataLength = bytes.Length - 17;
+            Array.Copy(bytes, 0, flag, 0, flag.Length);
+            var destinationAddress = BitConverter.ToInt32(bytes, flag.Length);
+            var sourceAddress = BitConverter.ToInt32(bytes, flag.Length + 4);
+            var dataLength = bytes.Length - (flag.Length + 2 * sizeof(int) + 1);
             var data = new byte[dataLength];
-            Array.Copy(bytes, 16, data, 0, dataLength);
+            Array.Copy(bytes, flag.Length + 2 * sizeof(int), data, 0, dataLength);
             var fcs = bytes[^1];
-            
+
             return new Packet
             {
                 Flag = flag,
                 DestinationAddress = destinationAddress,
                 SourceAddress = sourceAddress,
-                Data = data,
+                Data = BitUnstuff(data), // Применяем бит-унстаффинг к данным
                 FCS = fcs
             };
         }

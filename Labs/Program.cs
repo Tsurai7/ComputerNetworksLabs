@@ -54,12 +54,14 @@ async Task TransmitData(SerialPort senderPort, SerialPort receiverPort)
         Data = Encoding.UTF8.GetBytes(input.PadRight(maxDataLength, '\0')) 
     };
     
-    packet.FCS = Frame.CalculateHammingCode(packet.Data);
-
     var packetBytes = packet.ToBytes();
-    var stuffedBytes = Frame.BitStuff(packetBytes);
+    Console.WriteLine($"Original FCS: {Convert.ToString(packet.FCS, 2).PadLeft(8, '0')}");
+
+    // Corrupt the data before sending
+    var corruptedBytes = Frame.CorruptData(packetBytes);
     
-    await Task.Run(() => senderPort.Write(stuffedBytes, 0, stuffedBytes.Length));
+    Console.WriteLine("Sending corrupted packet...");
+    await Task.Run(() => senderPort.Write(corruptedBytes, 0, corruptedBytes.Length));
 }
 
 Task ChangeSpeed(SerialPort port1, SerialPort port2)
@@ -82,13 +84,10 @@ void HandleDataReceived(SerialPort port, string portName)
 {
     var data = port.ReadExisting();
     var bytes = Encoding.UTF8.GetBytes(data);
-    var originalBytes = bytes.ToArray(); 
-    
-    var unstuffedBytes = Frame.BitUnstuff(originalBytes);
     
     try
     {
-        var packet = Frame.FromBytes(unstuffedBytes);
+        var packet = Frame.FromBytes(bytes);
 
         Console.WriteLine($"Data received from {portName}:");
         
@@ -98,8 +97,10 @@ void HandleDataReceived(SerialPort port, string portName)
         var sourceAddressHex = $"0x{packet.SourceAddress:X}";
         var destinationAddressHex = $"0x{packet.DestinationAddress:X}";
         
-        var computedFCS = Frame.CalculateHammingCode(packet.Data);
-        var fcsBinary = Convert.ToString(computedFCS, 2).PadLeft(8, '0');
+        var computedFCS = packet.CalculateHammingCode();
+        var receivedFCS = packet.FCS;
+        var computedFCSBinary = Convert.ToString(computedFCS, 2).PadLeft(8, '0');
+        var receivedFCSBinary = Convert.ToString(receivedFCS, 2).PadLeft(8, '0');
 
         Console.WriteLine($"  Source Address: {sourceAddressHex}");
         Console.WriteLine($"  Destination Address: {destinationAddressHex}");
@@ -107,10 +108,31 @@ void HandleDataReceived(SerialPort port, string portName)
         var dataAddresses = string.Join(", ", packet.Data.Select(b => $"0x{b:X2}")); 
         Console.WriteLine($"  Data: [{dataAddresses}]");
         
-        Console.WriteLine($"  Calculated  FCS: \u001b[31m{fcsBinary}\u001b[0m");
+        Console.WriteLine($"  Received FCS:    \u001b[34m{receivedFCSBinary}\u001b[0m");
+        Console.WriteLine($"  Calculated FCS:  \u001b[31m{computedFCSBinary}\u001b[0m");
+        Console.WriteLine(Frame.ValidateHammingCode(packet.Data, packet.FCS));
+        
+        var valid = Frame.ValidateHammingCode(packet.Data, receivedFCS);
+        if (valid)
+        {
+            if (computedFCS == receivedFCS)
+            {
+                Console.WriteLine("\u001b[32mFCS check passed. No errors detected.\u001b[0m");
+            }
+            else
+            {
+                Console.WriteLine("\u001b[33mFCS check failed, but error was corrected.\u001b[0m");
+                Console.WriteLine($"Corrected FCS: {Convert.ToString(packet.CalculateHammingCode(), 2).PadLeft(8, '0')}");
+            }
+        }
+        else
+        {
+            Console.WriteLine("\u001b[31mFCS check failed. Multiple errors detected.\u001b[0m");
+        }
     }
     catch (Exception ex)
     {
         Console.WriteLine($"Error processing received data: {ex.Message}");
+        Console.WriteLine($"Received raw bytes: [{string.Join(", ", bytes.Select(b => $"0x{b:X2}"))}]");
     }
 }

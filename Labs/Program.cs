@@ -6,6 +6,7 @@ var channel = new MonoChannel(senderPort, receiverPort);
 
 while (true)
 {
+    Thread.Sleep(250);
     Console.WriteLine("Choose an action:");
     Console.WriteLine("1 - Transmit data");
     Console.WriteLine("2 - Change Baud Rate");
@@ -17,7 +18,7 @@ while (true)
     switch (choice)
     {
         case 1:
-            ActionHandlers.TransmitDataHandler(channel);
+            ActionHandlers.TransmitDataWithCsmaCdHandler(channel);
             break;
         case 2:
             ActionHandlers.ChangeBaudRateHandler(senderPort, receiverPort);

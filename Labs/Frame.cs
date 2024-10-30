@@ -27,7 +27,7 @@ public class Frame
             };
             
             var dataLength = Math.Min(maxDataLength, messageBytes.Length - (i * maxDataLength));
-            for (int j = 0; j < dataLength; j++)
+            for (var j = 0; j < dataLength; j++)
             {
                 frame.Data.Add(messageBytes[i * maxDataLength + j]);
             }
@@ -60,20 +60,29 @@ public class Frame
     public static Frame Deserialize(byte[] byteArray)
     {
         var frame = new Frame();
-        
         var flagLength = frame.Flag.Count;
+
+        // Минимальный размер: флаг + 2 адреса + FCS
+        var minFrameSize = flagLength + sizeof(int) * 2 + 1;
+
+        // Проверяем, что длина массива достаточна для десериализации
+        if (byteArray.Length < minFrameSize)
+        {
+            throw new ArgumentException("Invalid byte array length for frame deserialization.");
+        }
 
         frame.DestinationAddress = BitConverter.ToInt32(byteArray, flagLength);
         frame.SourceAddress = BitConverter.ToInt32(byteArray, flagLength + sizeof(int));
-        
+
         var dataStartIndex = flagLength + sizeof(int) * 2;
-        var dataLength = byteArray.Length - dataStartIndex - 1;
+        var dataLength = byteArray.Length - dataStartIndex - 1; // -1 для FCS
+
         for (int i = 0; i < dataLength; i++)
         {
             frame.Data.Add(byteArray[dataStartIndex + i]);
         }
-        
-        frame.Fcs = byteArray[^1];
+
+        frame.Fcs = byteArray[^1]; // Последний байт — FCS
 
         return frame;
     }

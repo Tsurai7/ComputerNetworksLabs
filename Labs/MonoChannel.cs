@@ -11,12 +11,15 @@ public class MonoChannel
     private static readonly object ChannelLock = new();
     private static bool _channelBusy;
     private static Random _random = new();
+    
     private const double CollisionProbability = 0.1;
-    private const double ChannelBusyProbability = 0.2; 
+    private const double ChannelBusyProbability = 0.2;
     private const int MaxRetries = 16;
     private const int BaseCollisionWindow = 1000;
 
-    public MonoChannel(SerialPort senderPort, SerialPort receiverPort)
+    public MonoChannel(
+        SerialPort senderPort,
+        SerialPort receiverPort)
     {
         _senderPort = senderPort;
         _receiverPort = receiverPort;
@@ -87,7 +90,6 @@ public class MonoChannel
             
             for (var i = 0; i < data.Length; i++)
             {
-
                 if (_random.NextDouble() < CollisionProbability)
                 {
                     Console.WriteLine($"[Sender {_senderPort.PortName}] Collision detected on byte {i + 1}.");
@@ -116,7 +118,14 @@ public class MonoChannel
                 if (bytesRead > 0)
                 {
                     var receivedFrame = Frame.Deserialize(buffer);
-                    Console.WriteLine($"[Receiver {_receiverPort.PortName}] Frame received: DestinationAddress={receivedFrame.DestinationAddress}, SourceAddress={receivedFrame.SourceAddress}, Data={BitConverter.ToString(receivedFrame.Data.ToArray())}");
+                    
+                    var receivedData = Encoding.UTF8.GetString(receivedFrame.Data.ToArray());
+                    
+                    Console.WriteLine($"[Receiver {_receiverPort.PortName}] Frame received: " +
+                                      $"DestinationAddress={receivedFrame.DestinationAddress}, " +
+                                      $"SourceAddress={receivedFrame.SourceAddress}, " +
+                                      $"Data={BitConverter.ToString(receivedFrame.Data.ToArray())}, " +
+                                      $"DataAsString={receivedData}");
                 }
             }
             catch (Exception ex)
@@ -125,6 +134,7 @@ public class MonoChannel
             }
         }
     }
+
 
     private void HandleCollision()
     {

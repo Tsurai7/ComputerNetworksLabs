@@ -4,7 +4,7 @@ namespace Labs;
 
 public static class ActionHandlers
 {
-    public static void TransmitDataHandler(MonoChannel channel)
+    public static void TransmitDataWithCsmaCdHandler(MonoChannel channel)
     {
         Console.WriteLine("Choose direction of transmission (1: Port1 to Port2, 2: Port2 to Port1):");
         var directionChoice = Console.ReadLine();

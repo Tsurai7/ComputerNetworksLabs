@@ -23,9 +23,8 @@ public static class ActionHandlers
         }
 
         var data = Console.ReadLine();
-        var bytesToSend = System.Text.Encoding.UTF8.GetBytes(data);
         
-        channel.TransmitDataWithCsmaCd(bytesToSend);
+        channel.TransmitDataWithCsmaCd(data);
     }
     
     public static void ChangeBaudRateHandler(SerialPort port1, SerialPort port2)

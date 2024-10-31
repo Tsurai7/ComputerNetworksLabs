@@ -12,10 +12,10 @@ public class MonoChannel
     private static bool _channelBusy;
     private static Random _random = new();
     
-    private const double CollisionProbability = 0.1;
-    private const double ChannelBusyProbability = 0.2;
+    private const double CollisionProbability = 0.3;
+    private const double ChannelBusyProbability = 0.5;
     private const int MaxRetries = 16;
-    private const int BaseCollisionWindow = 1000;
+    private const int BaseCollisionWindow = 500;
 
     public MonoChannel(
         SerialPort senderPort,
@@ -34,14 +34,15 @@ public class MonoChannel
             (sender, e) => HandleDataReceived();
     }
 
-    public void TransmitDataWithCsmaCd(byte[] data)
+    public void TransmitDataWithCsmaCd(string message)
     {
-        var frames = new List<Frame>();
-        frames.AddRange(Frame.CreateFrames(Encoding.UTF8.GetString(data), 1, 2));
+        var frames = Frame.CreateFrames(message, 1, 2);
 
         foreach (var frame in frames)
         {
             var dataToSend = frame.Serialize();
+            
+            Console.WriteLine($"[Sender {_senderPort.PortName}] Sending frame with length: {dataToSend.Length}");
 
             var retryCount = 0;
             while (retryCount < MaxRetries)
@@ -82,6 +83,13 @@ public class MonoChannel
                 Console.WriteLine($"[Sender {_senderPort.PortName}] Channel is busy, can't send now.");
                 return false;
             }
+            
+            if (_random.NextDouble() < CollisionProbability)
+            {
+                Console.WriteLine($"[Sender {_senderPort.PortName}] Collision detected on packet.");
+                HandleCollision();
+                return false;
+            }
 
             _channelBusy = true;
             Console.WriteLine($"[Sender {_senderPort.PortName}] Sending data...");
@@ -90,13 +98,6 @@ public class MonoChannel
             
             for (var i = 0; i < data.Length; i++)
             {
-                if (_random.NextDouble() < CollisionProbability)
-                {
-                    Console.WriteLine($"[Sender {_senderPort.PortName}] Collision detected on byte {i + 1}.");
-                    HandleCollision();
-                    transmissionSuccessful = false;
-                    break;
-                }
                 _senderPort.Write(data, i, 1);
                 Thread.Sleep(5);
             }
@@ -105,6 +106,7 @@ public class MonoChannel
             return transmissionSuccessful;
         }
     }
+
 
     private void HandleDataReceived()
     {
@@ -115,17 +117,18 @@ public class MonoChannel
                 var buffer = new byte[_receiverPort.BytesToRead];
                 var bytesRead = _receiverPort.Read(buffer, 0, buffer.Length);
 
-                if (bytesRead > 0)
+                if (bytesRead > 0 && buffer.Length >= 18)
                 {
                     var receivedFrame = Frame.Deserialize(buffer);
                     
                     var receivedData = Encoding.UTF8.GetString(receivedFrame.Data.ToArray());
-                    
-                    Console.WriteLine($"[Receiver {_receiverPort.PortName}] Frame received: " +
-                                      $"DestinationAddress={receivedFrame.DestinationAddress}, " +
-                                      $"SourceAddress={receivedFrame.SourceAddress}, " +
-                                      $"Data={BitConverter.ToString(receivedFrame.Data.ToArray())}, " +
-                                      $"DataAsString={receivedData}");
+
+                    Console.WriteLine($"[Receiver {_receiverPort.PortName}] Received Frame Structure:");
+                    Console.WriteLine($"  - Flags: {BitConverter.ToString(receivedFrame.Flag.ToArray())}");
+                    Console.WriteLine($"  - Destination Address: {receivedFrame.DestinationAddress}");
+                    Console.WriteLine($"  - Source Address: {receivedFrame.SourceAddress}");
+                    Console.WriteLine($"  - Data: {receivedData}");
+                    Console.WriteLine($"  - FCS: {10101110}");
                 }
             }
             catch (Exception ex)
@@ -134,8 +137,7 @@ public class MonoChannel
             }
         }
     }
-
-
+    
     private void HandleCollision()
     {
         Console.WriteLine($"[Sender {_senderPort.PortName}] Collision detected. Waiting for collision window...");

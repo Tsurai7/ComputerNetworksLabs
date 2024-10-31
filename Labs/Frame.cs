@@ -7,8 +7,10 @@ public class Frame
     public IReadOnlyList<byte> Flag { get; } = new List<byte> { 28, 28, 28, 28, 28, 28, 28, 28 };
     public int DestinationAddress { get; set; }
     public int SourceAddress { get; set; }
-    public List<byte> Data { get; } = new();
+    public List<byte> Data { get; } = new(28);
     public byte Fcs { get; set; }
+
+    public static int Size => 8 + sizeof(int) + sizeof(int) + 28 + 1;
 
     public static List<Frame> CreateFrames(string message, int destinationAddress, int sourceAddress)
     {
@@ -41,31 +43,22 @@ public class Frame
     public byte[] Serialize()
     {
         var byteArray = new List<byte>();
-        
-        foreach (var flag in Flag)
-        {
-            byteArray.Add(flag);
-        }
-        
+        byteArray.AddRange(Flag);
         byteArray.AddRange(BitConverter.GetBytes(DestinationAddress));
         byteArray.AddRange(BitConverter.GetBytes(SourceAddress));
-        
         byteArray.AddRange(Data);
-        
         byteArray.Add(Fcs);
-
         return byteArray.ToArray();
     }
+
     
     public static Frame Deserialize(byte[] byteArray)
     {
         var frame = new Frame();
         var flagLength = frame.Flag.Count;
-
-        // Минимальный размер: флаг + 2 адреса + FCS
+        
         var minFrameSize = flagLength + sizeof(int) * 2 + 1;
-
-        // Проверяем, что длина массива достаточна для десериализации
+        
         if (byteArray.Length < minFrameSize)
         {
             throw new ArgumentException("Invalid byte array length for frame deserialization.");
@@ -75,14 +68,14 @@ public class Frame
         frame.SourceAddress = BitConverter.ToInt32(byteArray, flagLength + sizeof(int));
 
         var dataStartIndex = flagLength + sizeof(int) * 2;
-        var dataLength = byteArray.Length - dataStartIndex - 1; // -1 для FCS
+        var dataLength = byteArray.Length - dataStartIndex - 1;
 
         for (int i = 0; i < dataLength; i++)
         {
             frame.Data.Add(byteArray[dataStartIndex + i]);
         }
 
-        frame.Fcs = byteArray[^1]; // Последний байт — FCS
+        frame.Fcs = byteArray[^1];
 
         return frame;
     }

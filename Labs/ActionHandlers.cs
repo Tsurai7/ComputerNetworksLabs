@@ -4,29 +4,33 @@ namespace Labs;
 
 public static class ActionHandlers
 {
-    public static void TransmitDataWithCsmaCdHandler(MonoChannel channel)
+    public static void TransmitDataHandler(TokenRingController tokenRingController)
     {
-        Console.WriteLine("Choose direction of transmission (1: Port1 to Port2, 2: Port2 to Port1):");
-        var directionChoice = Console.ReadLine();
+        Console.Write("Enter source address: ");
+        int sourceAddress = int.Parse(Console.ReadLine()!);
 
-        switch (directionChoice)
-        {
-            case "1":
-                Console.WriteLine("Enter data to send from Port1 to Port2:");
-                break;
-            case "2":
-                Console.WriteLine("Enter data to send from Port2 to Port1:");
-                break;
-            default:
-                Console.WriteLine("Invalid choice, please try again.");
-                return;
-        }
+        Console.Write("Enter destination address: ");
+        int destinationAddress = int.Parse(Console.ReadLine()!);
 
-        var data = Console.ReadLine();
+        Console.Write("Enter message: ");
+        string message = Console.ReadLine()!;
+
+        Console.Write("Enter priority (1-2): ");
+        int priority = int.Parse(Console.ReadLine()!);
         
-        channel.TransmitDataWithCsmaCd(data);
+        var dataPacket = new Frame
+        {
+            SourceAddress = sourceAddress,
+            DestinationAddress = destinationAddress,
+            Data = message,
+            Priority = priority,
+            IsToken = false
+        };
+
+        tokenRingController.SendMessage(dataPacket);
+        Console.WriteLine("Data packet sent.");
     }
-    
+
     public static void ChangeBaudRateHandler(SerialPort port1, SerialPort port2)
     {
         Console.WriteLine("Enter new baud rate:");

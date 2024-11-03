@@ -2,7 +2,12 @@
 
 var (senderPort, receiverPort) = Utils.ChooseSenderAndReceiver();
 
-var channel = new MonoChannel(senderPort, receiverPort);
+var station1 = new Station(senderPort.PortName, 1, true);
+var station2 = new Station(receiverPort.PortName, 2, false);
+var stations = new[] { station1, station2 };
+var tokenRingController = new TokenRingController(stations);
+
+tokenRingController.StartRing();
 
 while (true)
 {
@@ -18,7 +23,7 @@ while (true)
     switch (choice)
     {
         case 1:
-            ActionHandlers.TransmitDataWithCsmaCdHandler(channel);
+            ActionHandlers.TransmitDataHandler(tokenRingController);
             break;
         case 2:
             ActionHandlers.ChangeBaudRateHandler(senderPort, receiverPort);

@@ -45,6 +45,7 @@ public class Station
         _port.Read(buffer, 0, buffer.Length);
 
         var packet = Frame.Deserialize(buffer);
+        
         OnReceivePacket?.Invoke(packet);
     }
 }

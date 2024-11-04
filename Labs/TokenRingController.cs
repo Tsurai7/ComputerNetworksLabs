@@ -4,6 +4,7 @@ public class TokenRingController
 {
     private readonly Station[] _stations;
     private int _currentTokenHolder;
+    private Frame? _pendingPacket;
 
     public TokenRingController(Station[] stations)
     {
@@ -26,34 +27,26 @@ public class TokenRingController
         PassToken();
     }
     
-    public void SendMessage(Frame dataPacket)
+    public void QueueMessage(Frame dataPacket)
     {
-        if (_currentTokenHolder == dataPacket.SourceAddress)
-        {
-            Console.WriteLine($"Станция {_stations[_currentTokenHolder].Address} отправляет сообщение на {dataPacket.DestinationAddress}");
-            _stations[_currentTokenHolder].Send(dataPacket);
-            PassToken();
-        }
-        else
-        {
-            Console.WriteLine($"Станция {_stations[_currentTokenHolder].Address} не может отправить сообщение. У нее нет токена.");
-        }
+        _pendingPacket = dataPacket;
+        Console.WriteLine("Сообщение добавлено в очередь, ожидает получения токена.");
     }
 
     private void OnReceivePacket(Frame packet)
     {
         if (packet.IsToken)
         {
-            Console.WriteLine($"Токен получен станцией {_stations[_currentTokenHolder].Address}");
-
-            if (ShouldSendData())
+            //Console.WriteLine($"Токен получен станцией {_stations[_currentTokenHolder].Address}");
+            
+            if (_pendingPacket != null && _pendingPacket.SourceAddress == _stations[_currentTokenHolder].Address)
             {
-                SendMessage(packet);
+                Console.WriteLine($"Станция {_stations[_currentTokenHolder].Address} отправляет сообщение на {_pendingPacket.DestinationAddress}");
+                _stations[_currentTokenHolder].Send(_pendingPacket);
+                _pendingPacket = null;
             }
-            else
-            {
-                PassToken();
-            }
+            
+            PassToken();
         }
         else if (packet.DestinationAddress == _stations[_currentTokenHolder].Address)
         {
@@ -65,20 +58,18 @@ public class TokenRingController
         }
     }
 
-    private bool ShouldSendData()
-    {
-        return false; 
-    }
-
     private void PassToken()
     {
+        Thread.Sleep(600);
+
         _currentTokenHolder = (_currentTokenHolder + 1) % _stations.Length;
 
         var tokenPacket = new Frame
         {
             IsToken = true
         };
+        //Console.WriteLine($"Передача токена от станции {_stations[_currentTokenHolder].Address}.");
+
         _stations[_currentTokenHolder].Send(tokenPacket);
     }
 }
-

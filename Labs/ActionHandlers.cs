@@ -27,7 +27,7 @@ public static class ActionHandlers
             IsToken = false
         };
 
-        tokenRingController.SendMessage(dataPacket);
+        tokenRingController.QueueMessage(dataPacket);
         Console.WriteLine("Data packet sent.");
     }
 

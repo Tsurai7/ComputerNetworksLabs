@@ -4,7 +4,10 @@ var (senderPort, receiverPort) = Utils.ChooseSenderAndReceiver();
 
 var station1 = new Station(senderPort.PortName, 1, true);
 var station2 = new Station(receiverPort.PortName, 2, false);
-var stations = new[] { station1, station2 };
+var stations = new[]
+{
+    station1, station2
+};
 var tokenRingController = new TokenRingController(stations);
 
 tokenRingController.StartRing();

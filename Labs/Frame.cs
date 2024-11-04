@@ -9,6 +9,7 @@ public class Frame
     public int SourceAddress { get; set; }
     public string Data { get; set; } = string.Empty;
     public int Priority { get; set; }
+    public int TTL { get; set; } = 5; 
     public bool IsToken { get; set; }
     
     public byte Fcs =>
@@ -31,5 +32,19 @@ public class Frame
             Data = packetData[3],
             IsToken = packetData[4] == "1"
         };
+    }
+    
+    public void DisplayFrameStructure()
+    {
+        Console.WriteLine("=== Frame Structure ===");
+        Console.WriteLine($"Flag: [{string.Join(", ", Flag)}]");
+        Console.WriteLine($"Destination Address: {DestinationAddress}");
+        Console.WriteLine($"Source Address: {SourceAddress}");
+        Console.WriteLine($"Data: {Data}");
+        Console.WriteLine($"Priority: {Priority}");
+        Console.WriteLine($"Is Token: {IsToken}");
+        Console.WriteLine($"TTL: {TTL}");
+        Console.WriteLine($"Checksum: {Fcs}");
+        Console.WriteLine("=======================");
     }
 }

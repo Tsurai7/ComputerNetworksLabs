@@ -37,20 +37,22 @@ public class TokenRingController
     {
         if (packet.IsToken)
         {
-            //Console.WriteLine($"Токен получен станцией {_stations[_currentTokenHolder].Address}");
-            
+            // Console.WriteLine($"Токен получен станцией {_stations[_currentTokenHolder].Address}");
+
             if (_pendingPacket != null && _pendingPacket.SourceAddress == _stations[_currentTokenHolder].Address)
             {
                 Console.WriteLine($"Станция {_stations[_currentTokenHolder].Address} отправляет сообщение на {_pendingPacket.DestinationAddress}");
                 _stations[_currentTokenHolder].Send(_pendingPacket);
                 _pendingPacket = null;
             }
-            
+
             PassToken();
         }
         else if (packet.DestinationAddress == _stations[_currentTokenHolder].Address)
         {
             Console.WriteLine($"Сообщение получено на станции {_stations[_currentTokenHolder].Address}: {packet.Data}");
+            
+            packet.DisplayFrameStructure();
         }
         else
         {
